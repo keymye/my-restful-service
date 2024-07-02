@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import jakarta.validation.Valid;
 import kr.co.anyfive.myrestfulservice.bean.AdminUser;
+import kr.co.anyfive.myrestfulservice.bean.AdminUserV2;
 import kr.co.anyfive.myrestfulservice.bean.User;
 import kr.co.anyfive.myrestfulservice.dao.UserDaoService;
 import kr.co.anyfive.myrestfulservice.exception.UserNotFoundException;
@@ -28,8 +29,8 @@ public class AdminUserController {
         this.service = service;
     }
 
-    @GetMapping("/users/{id}")
-    public MappingJacksonValue retrieveUser4Admin(@PathVariable int id){
+    @GetMapping(value = "/users/{id}", headers = "X-API-VERSION=1")
+    public MappingJacksonValue retrieveUser4AdminV1(@PathVariable int id){
         User user = service.findOne(id);
 
         AdminUser adminUser = new AdminUser();
@@ -71,4 +72,25 @@ public class AdminUserController {
         return mapping;
     }
 
+    @GetMapping(value = "/users/{id}", headers = "X-API-VERSION=2")
+    public MappingJacksonValue retrieveUser4AdminV2(@PathVariable int id){
+        User user = service.findOne(id);
+
+        AdminUserV2 adminUser = new AdminUserV2();
+
+        if(user == null){
+            throw new UserNotFoundException(String.format("ID[%s] not found", id));
+        }else{
+            BeanUtils.copyProperties(user, adminUser);
+            adminUser.setGrade("VIP");
+        }
+
+        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id","name","joinDate","grade");
+        FilterProvider filters = new SimpleFilterProvider().addFilter("UserInfoV2", filter);
+
+        MappingJacksonValue mapping = new MappingJacksonValue(adminUser);
+        mapping.setFilters(filters);
+
+        return mapping;
+    }
 }
